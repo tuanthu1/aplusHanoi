@@ -1,6 +1,6 @@
 import axios from 'axios';
 const axiosClient = axios.create({
-  baseURL: "https://aplushn-api.onrender.com",
+  baseURL: "https://aplushn-api.onrender.com/api",
   headers: {
     'Content-Type': 'application/json',
   },
