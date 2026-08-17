@@ -1,0 +1,304 @@
+* {
+  box-sizing: border-box;
+  font: 1em sans-serif;
+}
+
+.map-wrapper {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 30px;
+  background-image: linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.95)), url('../assets/anhnen.png');
+  background-size: cover;
+  background-position: center;
+  
+  background-attachment: fixed; 
+  border-radius: 16px;
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.9);
+  border: 1px solid #333; 
+}
+
+.glow-down-effect {
+  font-size: 24px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  background: linear-gradient(180deg, #d4e02e 0%, #ffffff 50%, #d4e02e 100%);
+  background-size: 100% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  animation: shineDown 1.5s infinite linear;
+}
+
+@keyframes shineDown {
+  0% { background-position: 50% 100%; }
+  100% { background-position: 50% -100%; }
+}
+
+.bounce-arrow {
+  display: block;
+  margin-top: 10px;
+  font-size: 28px;
+  color: #d4e02e;
+  animation: bounceUpDown 1.5s infinite ease-in-out;
+}
+
+@keyframes bounceUpDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+.floor-svg-drawn {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 5px rgba(205, 245, 255, 0.137));
+}
+
+.area-path {
+  fill: #070707;
+  stroke: #222;
+  stroke-width: 1;
+  pointer-events: none; 
+}
+.area-path:hover {
+  fill: #222;
+  stroke: #fff;
+  stroke-width: 1.5;
+  filter: brightness(1.2) drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+}
+.table-group {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.table-group:hover, 
+.table-group.active {
+  transform: scale(1.1);
+}
+.table-group.unclickable {
+  pointer-events: none !important; 
+  cursor: default !important;     
+}
+
+.table-group.active .table-label-box {
+  stroke: #fff;
+  stroke-width: 1.5;
+  filter: brightness(1.3) drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+.table-label-box {
+  transition: all 0.2s ease;
+}
+
+.table-label-text {
+  fill: #000;
+  font-weight: bold;
+  font-size: 8px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none; 
+}
+
+[class*="box-SV"] {
+  fill: #e0572e; 
+}
+
+.box-PRESIDENT {
+  fill: #f3ff51 !important;
+}
+
+[class*="box-VV"] {
+  fill: #f255f7; 
+}
+
+[class*="box-V"]:not([class*="box-VV"]) {
+  fill: #e0e0e0; 
+}
+
+[class*="box-C"] {
+  fill: #339f4b; 
+}
+[class*="box-G"] {
+  fill: #ff0000 !important; 
+}
+.box-BAR, .box-STAGE, .box-2ND{
+    fill: none !important;
+    stroke: none;
+    pointer-events: none;
+}
+
+.label-BAR, .label-STAGE {
+  fill: #fff !important;
+  font-size: 11px !important;
+  letter-spacing: 1px;
+}
+
+.table-group.booked .table-label-box {
+  fill: #333 !important;
+  stroke: #222;
+}
+
+.table-group.booked .table-label-text {
+  fill: #777 !important;
+}
+
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.9); 
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+  -webkit-transform: translateZ(0); 
+  transform: translateZ(0);
+}
+
+.modal-content {
+  background: #1a1a1a; color: #fff; padding: 30px;
+  border-radius: 16px; text-align: center; min-width: 320px;
+  border: 1px solid #333; box-shadow: 0 10px 30px #000;
+  will-change: transform, opacity;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+.btn-close {
+  background: transparent; color: #aaa;
+  border: 1px solid #555; padding: 10px 20px; border-radius: 6px;
+  cursor: pointer; margin-top: 15px; width: 100%; transition: all 0.2s;
+}
+.btn-close:hover { 
+  background: #333; color: #fff; 
+}
+/* BẢNG GIÁ */
+.pricing-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #333; 
+}
+
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Arial', sans-serif;
+}
+
+.pricing-table th {
+  padding-bottom: 15px;
+}
+
+.pricing-table td {
+  padding: 8px 0;
+}
+.col-left { text-align: left; }
+.col-right { text-align: right; }
+.price { text-align: right; color: #fff; font-weight: bold; font-size: 16px; letter-spacing: 1px; }
+.price span { font-size: 10px; color: #888; font-weight: normal; margin-left: 5px; } /* Chữ VND nhỏ lại */
+
+.title-vi { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase;}
+.title-en { font-size: 10px; font-weight: normal; color: #888; text-transform: uppercase; margin-top: 2px;}
+
+.legend-box {
+  display: inline-block;
+  width: 120px;
+  padding: 8px 0;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #000;
+  border-radius: 2px;
+}
+
+/* Khớp màu 100% với bản đồ ở trên */
+.legend-box.vip { background: #e0e0e0; }
+.legend-box.vvip { background: #f255f7; }
+.legend-box.svip { background: #e0572e; }
+.legend-box.president { background: #f3ff51; }
+.legend-box.cabana { background: #339f4b; }
+.legend-box.gavoucher { background: #f75555; }
+.legend-box.gathuong { background: #2ee0bf; }
+/* =========================================
+   9. FORM ĐẶT BÀN TRONG MODAL
+   ========================================= */
+.modal-title {
+  color: #fff;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.modal-title .highlight {
+  color: #d4e02e; /* Màu vàng chanh nhấn mạnh tên bàn */
+}
+
+.booking-form {
+  text-align: left;
+}
+
+.input-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-row {
+  display: flex;
+  gap: 15px;
+}
+
+.input-group label {
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.input-group input {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: #fff;
+  outline: none;
+  font-family: inherit;
+}
+
+.input-group input:focus {
+  border-color: #d4e02e;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.btn-submit {
+  flex: 2;
+  background: #d4e02e;
+  color: #000;
+  font-weight: bold;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-submit:hover {
+  background: #f1fc4c;
+  transform: scale(1.02);
+}
+
+.btn-cancel {
+  flex: 1;
+  background: transparent;
+  color: #888;
+  border: 1px solid #444;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #333;
+  color: #fff;
+}
