@@ -14,6 +14,7 @@ const MenuGA = () => {
 
   const [activeTab, setActiveTab] = useState('GAnormal');
   const [cart, setCart] = useState({});
+  const [tablePriceMap, setTablePriceMap] = useState({});
   const [isLoading, setIsLoading] = useState(false); 
   const [menuData, setMenuData] = useState({});
   // Xử lý thêm/bớt món 
@@ -43,11 +44,31 @@ const MenuGA = () => {
     });
   };
 
+  useEffect(() => {
+    const loadTablePrices = async () => {
+      try {
+        const res = await axiosClient.get('/admin/table-prices');
+        if (res?.success && Array.isArray(res.data)) {
+          const map = {};
+          res.data.forEach(item => {
+            map[item.tableType] = item;
+          });
+          setTablePriceMap(map);
+        }
+      } catch (error) {
+        console.error('Lỗi kéo giá bàn từ DB:', error);
+      }
+    };
+    loadTablePrices();
+  }, []);
+
   const getTablePrice = (dateString) => {
     if (!dateString) return 0;
     const dateObj = new Date(dateString);
     const isSunday = dateObj.getDay() === 0;
-    return isSunday ? 300000 : 3000000;
+    const record = tablePriceMap.GA_NORMAL || { weekday: 3000000, weekend: 300000 };
+    const value = isSunday ? (record.weekend ?? record.weekday ?? 300000) : (record.weekday ?? record.weekend ?? 3000000);
+    return Number(value) || 0;
   };
   const getMenuPrice = () => Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
 

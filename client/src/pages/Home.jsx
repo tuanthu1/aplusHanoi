@@ -1,6 +1,6 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {Trans, useTranslation} from 'react-i18next';
+import axiosClient from '../api/axiosClient';
 import FloorMap from '../components/FloorMap';
 import Events from './Events';
 import MenuPreview from '../components/MenuPreview';
@@ -9,6 +9,8 @@ const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [homeBannerImage, setHomeBannerImage] = useState('/sukien.jpg');
+  const [homeBannerTitle, setHomeBannerTitle] = useState('Special Event');
   const { t } = useTranslation();
   // Function to handle modal close
   const handleCloseModal = () => {
@@ -23,6 +25,33 @@ const Home = () => {
   const handleCloseVideo = () => {
     setIsVideoOpen(false);
   };
+
+  useEffect(() => {
+    const savedBanner = localStorage.getItem('homeBannerImage');
+    if (savedBanner) {
+      setHomeBannerImage(savedBanner);
+      setHomeBannerTitle('Custom Home Banner');
+      return;
+    }
+
+    const fetchHomeBanner = async () => {
+      try {
+        const data = await axiosClient.get('/events');
+        const homeEvent = Array.isArray(data)
+          ? data.find((event) => event.isHomeBanner) || data[0]
+          : null;
+
+        if (homeEvent?.imageUrl) {
+          setHomeBannerImage(homeEvent.imageUrl);
+          setHomeBannerTitle(homeEvent.title || 'Special Event');
+        }
+      } catch (error) {
+        console.error('Lỗi tải ảnh banner đầu trang:', error);
+      }
+    };
+
+    fetchHomeBanner();
+  }, []);
 
   // Function to request access to personal information
   const requestPersonalInfo = async () => {
@@ -95,7 +124,7 @@ const Home = () => {
             className="event-glow-container"
             onClick={() => setIsModalOpen(true)}
           >
-            <img src="/sukien.jpg" alt="Special Event" className="event-img-glow" />
+            <img src={homeBannerImage} alt={homeBannerTitle} className="event-img-glow" />
             <div className="event-glow-label">HOT EVENT</div>
           </div>
         </section>
@@ -107,8 +136,8 @@ const Home = () => {
           >
             <div className="modal-close-btn">&times;</div>
             <img
-              src="/sukien.jpg"
-              alt="Enlarged Event"
+              src={homeBannerImage}
+              alt={homeBannerTitle}
               className={`modal-image-content ${isZoomed ? 'zoomed' : ''}`}
               onClick={(e) => {
                 e.stopPropagation();

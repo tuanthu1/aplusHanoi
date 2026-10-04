@@ -1,32 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
 import { useNavigate } from 'react-router-dom';
 import '../index.css';
 import { useTranslation } from 'react-i18next';
-import { Autoplay } from 'swiper/modules';
+import axiosClient from '../api/axiosClient';
+
 const MenuPreview = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  // Danh sách ảnh menu đại ca muốn khoe (nhớ để ảnh vào public/menu/)
-  const menuImages = [
-      "/tepanhmenu/441898734745807189.jxl12.jpg",
-      "/tepanhmenu/1827183094171399947.jxl4.jpg",
-      "/tepanhmenu/1827183094171399947.jxl5.jpg",
-      "/tepanhmenu/1827183094171399947.jxl7.jpg",
-      "/tepanhmenu/1827183094171399947.jxl9.jpg",
-      "/tepanhmenu/2024756600281741344.jxl1.jpg",
-      "/tepanhmenu/2024756600281741344.jxl2.jpg",
-      "/tepanhmenu/2024756600281741344.jxl3.jpg",
-      "/tepanhmenu/3188931239068116277.jxl8.jpg",
-      "/tepanhmenu/3188931239068116277.jxl13.jpg",
-      "/tepanhmenu/3699557315484452130.jxl6.jpg",
-      "/tepanhmenu/4309951040032972990.jxl10.jpg",
-      "/tepanhmenu/4309951040032972990.jxl11.jpg",
-      "/tepanhmenu/4309951040032972990.jxl12.jpg",
-      "/tepanhmenu/4309951040032972990.jxl14.jpg",
-  ];
+  const [menuImages, setMenuImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Lấy danh sách ảnh từ API
+  useEffect(() => {
+    const fetchMenuPreviewImages = async () => {
+      try {
+        setIsLoading(true);
+        const data = await axiosClient.get('/admin/menu-preview-images');
+        if (data.success && data.data) {
+          setMenuImages(data.data.map(img => img.imageUrl));
+        } else {
+          // Nếu không có ảnh từ API, sử dụng ảnh mặc định
+          setMenuImages([
+            "/tepanhmenu/441898734745807189.jxl12.jpg",
+            "/tepanhmenu/1827183094171399947.jxl4.jpg",
+            "/tepanhmenu/1827183094171399947.jxl5.jpg",
+            "/tepanhmenu/1827183094171399947.jxl7.jpg",
+            "/tepanhmenu/1827183094171399947.jxl9.jpg",
+            "/tepanhmenu/2024756600281741344.jxl1.jpg",
+            "/tepanhmenu/2024756600281741344.jxl2.jpg",
+            "/tepanhmenu/2024756600281741344.jxl3.jpg",
+            "/tepanhmenu/3188931239068116277.jxl8.jpg",
+            "/tepanhmenu/3188931239068116277.jxl13.jpg",
+            "/tepanhmenu/3699557315484452130.jxl6.jpg",
+            "/tepanhmenu/4309951040032972990.jxl10.jpg",
+            "/tepanhmenu/4309951040032972990.jxl11.jpg",
+            "/tepanhmenu/4309951040032972990.jxl12.jpg",
+            "/tepanhmenu/4309951040032972990.jxl14.jpg",
+          ]);
+        }
+      } catch (err) {
+        console.error("Lỗi lấy ảnh menu preview:", err);
+        // Fallback về ảnh mặc định nếu API lỗi
+        setMenuImages([
+          "/tepanhmenu/441898734745807189.jxl12.jpg",
+          "/tepanhmenu/1827183094171399947.jxl4.jpg",
+          "/tepanhmenu/1827183094171399947.jxl5.jpg",
+          "/tepanhmenu/1827183094171399947.jxl7.jpg",
+          "/tepanhmenu/1827183094171399947.jxl9.jpg",
+          "/tepanhmenu/2024756600281741344.jxl1.jpg",
+          "/tepanhmenu/2024756600281741344.jxl2.jpg",
+          "/tepanhmenu/2024756600281741344.jxl3.jpg",
+          "/tepanhmenu/3188931239068116277.jxl8.jpg",
+          "/tepanhmenu/3188931239068116277.jxl13.jpg",
+          "/tepanhmenu/3699557315484452130.jxl6.jpg",
+          "/tepanhmenu/4309951040032972990.jxl10.jpg",
+          "/tepanhmenu/4309951040032972990.jxl11.jpg",
+          "/tepanhmenu/4309951040032972990.jxl12.jpg",
+          "/tepanhmenu/4309951040032972990.jxl14.jpg",
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMenuPreviewImages();
+  }, []);
 
   const settings = {
     dots: true,

@@ -27,6 +27,11 @@ const Admin = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [editingMenuId, setEditingMenuId] = useState(null); // Lưu ID món đang được sửa
   const [menuForm, setMenuForm] = useState({ name: '', category: 'gaBOTTLE', price: '', desc: '', imageUrl: '', optionsText: '',isHeader: false });
+  // STATE CHO QUẢN LÝ ẢNH MENU PREVIEW
+  const [menuPreviewImages, setMenuPreviewImages] = useState([]);
+  const [selectedPreviewFiles, setSelectedPreviewFiles] = useState([]);
+  const [editingPreviewId, setEditingPreviewId] = useState(null);
+  const [isUploadingPreview, setIsUploadingPreview] = useState(false);
   const isTransactionsEndpointUnavailableRef = useRef(false);
   const navigate = useNavigate();
   const role = localStorage.getItem('adminRole'); 
@@ -35,6 +40,10 @@ const Admin = () => {
     const [tablePrices, setTablePrices] = useState([]);
     const [editingPrice, setEditingPrice] = useState(null);
     const [priceForm, setPriceForm] = useState({ tableType: '', weekday: 0, weekend: 0 });
+    const [tableNameForm, setTableNameForm] = useState({ tableType: '', label: '' });
+    const [editingTableName, setEditingTableName] = useState(null);
+    const [customBannerUrl, setCustomBannerUrl] = useState(localStorage.getItem('homeBannerImage') || '');
+    const [bannerUploadFile, setBannerUploadFile] = useState(null);
   const filteredEvents = events.filter(ev => {
     const matchesName = ev.title.toLowerCase().includes(eventSearchTerm.toLowerCase());
     const matchesMonth = eventFilterMonth === '' || new Date(ev.date).getMonth() + 1 === parseInt(eventFilterMonth);
@@ -86,6 +95,7 @@ const Admin = () => {
   const currentToken = localStorage.getItem('adminToken');
   const formatVnd = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value || 0))} ₫`;
   const parseVndInput = (value) => Number(String(value).replace(/[^\d]/g, '')) || 0;
+  const formatTableTypeLabel = (tableType = '') => String(tableType || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
 
   useEffect(() => {
     if (!currentToken) {
@@ -193,6 +203,44 @@ const Admin = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const handleSaveTableName = async (e) => {
+      e.preventDefault();
+      try {
+        const currentTable = tablePrices.find(item => item.tableType === tableNameForm.tableType);
+        const token = localStorage.getItem('adminToken');
+        const payload = {
+          tableType: tableNameForm.tableType,
+          label: tableNameForm.label,
+          weekday: currentTable?.weekday ?? 0,
+          weekend: currentTable?.weekend ?? 0
+        };
+
+        const data = await axiosClient.put('/admin/table-prices', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (data.success) {
+          toast.success('Đã cập nhật tên bàn!');
+          setTableNameForm({ tableType: '', label: '' });
+          setEditingTableName(null);
+          fetchTablePrices();
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Lỗi cập nhật tên bàn');
+      }
+    };
+
+    const startEditTableName = (price) => {
+      setEditingTableName(price._id);
+      setTableNameForm({
+        tableType: price.tableType,
+        label: price.label || formatTableTypeLabel(price.tableType)
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
   const fetchTransactionsFromBookings = async () => {
     const fallback = await axiosClient.get('/admin/all', {
       headers: {
@@ -259,6 +307,24 @@ const Admin = () => {
     } catch (err) { 
       console.error("Lỗi xóa:", err);
       toast.error("Lỗi xóa vui lòng đăng nhập lại!"); 
+    }
+  };
+
+  const handleToggleHomeBanner = async (id, currentValue) => {
+    try {
+      const data = await axiosClient.put(`/admin/events/${id}/home-banner`, { isHomeBanner: !currentValue }, {
+        headers: {
+          Authorization: `Bearer ${currentToken}`
+        }
+      });
+
+      if (data.success) {
+        toast.success(data.message || 'Đã cập nhật ảnh đầu trang!');
+        fetchEvents();
+      }
+    } catch (error) {
+      console.error('Lỗi cập nhật ảnh đầu trang:', error);
+      toast.error(error.response?.data?.message || 'Lỗi cập nhật ảnh đầu trang');
     }
   };
   const handleDeleteBooking = async (id) => {
@@ -338,7 +404,11 @@ const Admin = () => {
   }, [currentToken, activeTab]);
 
   useEffect(() => {
-    if (currentToken && activeTab === 'prices') fetchTablePrices();
+    if (currentToken && (activeTab === 'prices' || activeTab === 'table-names')) fetchTablePrices();
+  }, [currentToken, activeTab]);
+
+  useEffect(() => {
+    if (currentToken && activeTab === 'menu-images') fetchMenuPreviewImages();
   }, [currentToken, activeTab]);
   const handlePostMenu = async (e) => {
     e.preventDefault();
@@ -513,6 +583,102 @@ const Admin = () => {
       return null;
     }
   };
+
+  const handleCustomBannerUpload = async (file) => {
+    if (!file) return;
+
+    const url = await uploadImage(file);
+    if (!url) {
+      toast.error('Lỗi tải ảnh từ máy lên!');
+      return;
+    }
+
+    localStorage.setItem('homeBannerImage', url);
+    setCustomBannerUrl(url);
+    toast.success('Đã cập nhật ảnh đầu trang!');
+  };
+  const handleDeleteCustomBanner = () => {
+    localStorage.removeItem('homeBannerImage');
+    setCustomBannerUrl('');
+    toast.success('Đã xóa ảnh đầu trang tùy chỉnh.');
+  };
+
+  // ===== QUẢN LÝ ẢNH MENU PREVIEW =====
+  const fetchMenuPreviewImages = async () => {
+    try {
+      const data = await axiosClient.get('/admin/menu-preview-images', { 
+        headers: { Authorization: `Bearer ${currentToken}` } 
+      });
+      if (data.success) setMenuPreviewImages(data.data || []);
+    } catch (err) { 
+      console.error("Lỗi lấy ảnh menu preview", err); 
+    }
+  };
+
+  const handleAddMenuPreviewImage = async (e) => {
+    e.preventDefault();
+    if (selectedPreviewFiles.length === 0) {
+      return toast.error('Vui lòng chọn ít nhất 1 ảnh!');
+    }
+
+    setIsUploadingPreview(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      // Upload từng ảnh
+      for (const file of selectedPreviewFiles) {
+        try {
+          const imageUrl = await uploadImage(file);
+          if (imageUrl) {
+            // Thêm ảnh vào database
+            const data = await axiosClient.post('/admin/menu-preview-images', 
+              { imageUrl }, 
+              { headers: { Authorization: `Bearer ${currentToken}` } }
+            );
+            if (data.success) {
+              successCount++;
+            }
+          }
+        } catch (err) {
+          console.error(`Lỗi upload file ${file.name}:`, err);
+          failCount++;
+        }
+      }
+
+      // Hiển thị kết quả
+      if (successCount > 0) {
+        toast.success(`Đã thêm thành công ${successCount} ảnh!`);
+      }
+      if (failCount > 0) {
+        toast.warning(`${failCount} ảnh thất bại!`);
+      }
+
+      setSelectedPreviewFiles([]);
+      fetchMenuPreviewImages();
+    } catch (err) {
+      toast.error('Lỗi thêm ảnh!');
+    } finally {
+      setIsUploadingPreview(false);
+    }
+  };
+
+  const handleDeleteMenuPreviewImage = async (id) => {
+    if (!window.confirm("Bạn chắc chắn muốn xóa ảnh này?")) return;
+
+    try {
+      const data = await axiosClient.delete(`/admin/menu-preview-images/${id}`, {
+        headers: { Authorization: `Bearer ${currentToken}` }
+      });
+      if (data.success) {
+        toast.success('Đã xóa ảnh menu preview!');
+        fetchMenuPreviewImages();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Lỗi xóa ảnh!');
+    }
+  };
+
   const handlePostEvent = async (e) => {
     e.preventDefault();
     if (!eventForm.imageUrl) return toast.error('Chưa chọn ảnh!');
@@ -582,6 +748,18 @@ const Admin = () => {
           ĐĂNG SỰ KIỆN
         </button>
         <button 
+          className={`admin-tab-btn ${activeTab === 'banner' ? 'active' : ''}`}
+          onClick={() => setActiveTab('banner')}
+        >
+          QUẢN LÝ ẢNH ĐẦU TRANG
+        </button>
+        <button 
+          className={`admin-tab-btn ${activeTab === 'menu-images' ? 'active' : ''}`}
+          onClick={() => setActiveTab('menu-images')}
+        >
+          QUẢN LÝ ẢNH CHI TIẾT MENU
+        </button>
+        <button 
           className={`admin-tab-btn ${activeTab === 'password' ? 'active' : ''}`}
           onClick={() => setActiveTab('password')}
         >
@@ -605,6 +783,13 @@ const Admin = () => {
           onClick={() => setActiveTab('prices')}
         >
           QUẢN LÝ GIÁ BÀN
+        </button>
+
+        <button 
+          className={`admin-tab-btn ${activeTab === 'table-names' ? 'active' : ''}`}
+          onClick={() => setActiveTab('table-names')}
+        >
+          QUẢN LÝ TÊN BÀN
         </button>
       </div>
 
@@ -906,6 +1091,211 @@ const Admin = () => {
           </form>
         </div>
       )}
+      {/* QUẢN LÝ ẢNH ĐẦU TRANG */}
+      {activeTab === 'banner' && (
+        <div className="tab-content fade-in admin-form-container">
+          <div className="admin-form" style={{ maxWidth: '700px' }}>
+            <div className="admin-input-file-group">
+              <label>Chọn ảnh mới cho banner đầu trang:</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setBannerUploadFile(file);
+                }}
+                className="admin-input"
+              />
+            </div>
+
+            {bannerUploadFile && (
+              <div style={{ marginTop: '12px' }}>
+                <img
+                  src={URL.createObjectURL(bannerUploadFile)}
+                  alt="Selected banner preview"
+                  style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #666' }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+              <button
+                type="button"
+                disabled={!bannerUploadFile || isUploading}
+                onClick={async () => {
+                  if (!bannerUploadFile) return;
+                  const url = await uploadImage(bannerUploadFile);
+                  if (url) {
+                    localStorage.setItem('homeBannerImage', url);
+                    setCustomBannerUrl(url);
+                    setBannerUploadFile(null);
+                    toast.success('Đã đăng ảnh banner thành công!');
+                  }
+                }}
+                className="admin-submit-btn event"
+                style={{ opacity: (!bannerUploadFile || isUploading) ? 0.5 : 1 }}
+              >
+                {isUploading ? 'ĐANG TẢI ẢNH...' : 'ĐĂNG'}
+              </button>
+            </div>
+
+            {customBannerUrl && (
+              <div style={{ marginTop: '20px' }}>
+                <img
+                  src={customBannerUrl}
+                  alt="Current banner preview"
+                  style={{ width: '100%', maxHeight: '260px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #666' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBannerUploadFile(null);
+                      handleDeleteCustomBanner();
+                    }}
+                    className="action-btn btn-cancel"
+                  >
+                    Xóa ảnh hiện tại
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* QUẢN LÝ ẢNH CHI TIẾT MENU */}
+      {activeTab === 'menu-images' && (
+        <div className="tab-content fade-in admin-form-container">
+          <div className="admin-form" style={{ maxWidth: '900px' }}>
+            <h2 className="admin-form-title">QUẢN LÝ ẢNH MENU PREVIEW</h2>
+            
+            {/* FORM THÊM ẢNH */}
+            <form onSubmit={handleAddMenuPreviewImage} className="admin-form" style={{ marginBottom: '40px' }}>
+              <h3 style={{ fontSize: '16px', marginBottom: '15px', fontWeight: 'bold' }}>THÊM ẢNH MỚI</h3>
+              
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setSelectedPreviewFiles(files);
+                  }}
+                  disabled={isUploadingPreview}
+                  className="admin-input"
+                  style={{ flex: 1, minWidth: '200px' }}
+                />
+                <button 
+                  type="submit" 
+                  disabled={isUploadingPreview || selectedPreviewFiles.length === 0}
+                  className="admin-submit-btn"
+                  style={{ flex: 0, padding: '10px 20px', whiteSpace: 'nowrap' }}
+                >
+                  {isUploadingPreview ? 'ĐANG TẢI...' : `THÊM (${selectedPreviewFiles.length})`}
+                </button>
+              </div>
+
+              {selectedPreviewFiles.length > 0 && (
+                <div style={{ marginTop: '15px' }}>
+                  <p style={{ marginBottom: '10px', fontSize: '14px', color: '#999' }}>
+                    Đã chọn {selectedPreviewFiles.length} ảnh:
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {selectedPreviewFiles.map((file, idx) => (
+                      <div key={idx} style={{ position: 'relative' }}>
+                        <img 
+                          src={URL.createObjectURL(file)} 
+                          alt={`preview-${idx}`}
+                          style={{
+                            width: '80px', 
+                            height: '60px', 
+                            objectFit: 'cover', 
+                            borderRadius: '5px',
+                            border: '2px solid #4CAF50'
+                          }} 
+                          title={file.name}
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          top: '2px',
+                          right: '2px',
+                          background: '#4CAF50',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          {idx + 1}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </form>
+
+            {/* DANH SÁCH ẢNH */}
+            <div className="admin-table-wrapper">
+              <h3 style={{ fontSize: '16px', marginBottom: '15px', fontWeight: 'bold' }}>DANH SÁCH ẢNH (Tổng: {menuPreviewImages.length})</h3>
+              
+              {menuPreviewImages.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#999', padding: '20px' }}>Chưa có ảnh nào. Hãy thêm ảnh đầu tiên!</p>
+              ) : (
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '10%' }}>STT</th>
+                      <th style={{ width: '40%' }}>Ảnh</th>
+                      <th style={{ width: '30%' }}>Ngày Tạo</th>
+                      <th style={{ width: '20%' }}>Hành Động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {menuPreviewImages.map((img, index) => (
+                      <tr key={img._id}>
+                        <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                        <td style={{ textAlign: 'center' }}>
+                          <img 
+                            src={img.imageUrl} 
+                            alt={`menu-${index}`}
+                            style={{
+                              width: '80px', 
+                              height: '60px', 
+                              objectFit: 'cover', 
+                              borderRadius: '4px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => window.open(img.imageUrl, '_blank')}
+                            title="Nhấp để xem ảnh lớn"
+                          />
+                        </td>
+                        <td style={{ textAlign: 'center', fontSize: '12px' }}>
+                          {new Date(img.createdAt).toLocaleString('vi-VN')}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button 
+                            onClick={() => handleDeleteMenuPreviewImage(img._id)}
+                            className="action-btn btn-cancel"
+                            title="Xóa ảnh"
+                          >
+                            Xóa
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Sự kiện */}
       {activeTab === 'events-list' && (
         <div className="tab-content fade-in">
@@ -1180,6 +1570,42 @@ const Admin = () => {
                   <option value="VVIP">VVIP</option>
                   <option value="SVIP">SVIP</option>
                   <option value="SV8">SV8</option>
+                  <option value="SV1">SV1</option>
+                  <option value="SV2">SV2</option>
+                  <option value="SV3">SV3</option>
+                  <option value="SV4">SV4</option>
+                  <option value="SV5">SV5</option>
+                  <option value="SV6">SV6</option>
+                  <option value="SV7">SV7</option>
+                  <option value="V1">V1</option>
+                  <option value="V2">V2</option>
+                  <option value="V3">V3</option>
+                  <option value="V4">V4</option>
+                  <option value="V5">V5</option>
+                  <option value="V6">V6</option>
+                  <option value="VV1">VV1</option>
+                  <option value="VV2">VV2</option>
+                  <option value="VV3">VV3</option>
+                  <option value="VV4">VV4</option>
+                  <option value="VV5">VV5</option>
+                  <option value="VV6">VV6</option>
+                  <option value="VV7">VV7</option>
+                  <option value="VV8">VV8</option>
+                  <option value="VV9">VV9</option>
+                  <option value="VV10">VV10</option>
+                  <option value="VV11">VV11</option>
+                  <option value="VV12">VV12</option>
+                  <option value="VV13">VV13</option>
+                  <option value="VV14">VV14</option>
+                  <option value="VV15">VV15</option>
+                  <option value="VV16">VV16</option>
+                  <option value="C1">C1</option>
+                  <option value="C2">C2</option>
+                  <option value="C3">C3</option>
+                  <option value="C4">C4</option>
+                  <option value="C5">C5</option>
+                  <option value="C6">C6</option>
+                  <option value="C7">C7</option>
                   <option value="CABANA">CABANA</option>
                   <option value="GA_NORMAL">GA NORMAL</option>
                   <option value="GA_VOUCHER">GA VOUCHER</option>
@@ -1241,12 +1667,131 @@ const Admin = () => {
                 ) : (
                   tablePrices.map((price) => (
                     <tr key={price._id}>
-                      <td style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.tableType}</td>
+                      <td>
+                        <div style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.label || formatTableTypeLabel(price.tableType)}</div>
+                        <div style={{fontSize: '11px', color: '#aaa'}}>{price.tableType}</div>
+                      </td>
                       <td>{price.weekday.toLocaleString('vi-VN')} đ</td>
                       <td>{price.weekend.toLocaleString('vi-VN')} đ</td>
                       <td>
                         <button onClick={() => startEditPrice(price)} className="action-btn btn-edit" style={{width: '50px', height: '44px', marginRight: '5px', borderRadius: '7px', cursor: 'pointer'}}>
                           Sửa
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'table-names' && (
+        <div className="tab-content fade-in">
+          <div className="admin-form-container" style={{ maxWidth: '560px', marginBottom: '30px' }}>
+            <h2 className="admin-form-title event">
+              {editingTableName ? 'CHỈNH SỬA TÊN BÀN' : 'CẬP NHẬT TÊN BÀN'}
+            </h2>
+            <form onSubmit={handleSaveTableName} className="admin-form">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <select
+                  value={tableNameForm.tableType}
+                  onChange={e => setTableNameForm({ ...tableNameForm, tableType: e.target.value })}
+                  className="admin-input"
+                  required
+                >
+                  <option value="">-- Chọn loại bàn --</option>
+                  <option value="VIP">VIP</option>
+                  <option value="VVIP">VVIP</option>
+                  <option value="SVIP">SVIP</option>
+                  <option value="SV8">SV8</option>
+                  <option value="SV1">SV1</option>
+                  <option value="SV2">SV2</option>
+                  <option value="SV3">SV3</option>
+                  <option value="SV4">SV4</option>
+                  <option value="SV5">SV5</option>
+                  <option value="SV6">SV6</option>
+                  <option value="SV7">SV7</option>
+                  <option value="V1">V1</option>
+                  <option value="V2">V2</option>
+                  <option value="V3">V3</option>
+                  <option value="V4">V4</option>
+                  <option value="V5">V5</option>
+                  <option value="V6">V6</option>
+                  <option value="VV1">VV1</option>
+                  <option value="VV2">VV2</option>
+                  <option value="VV3">VV3</option>
+                  <option value="VV4">VV4</option>
+                  <option value="VV5">VV5</option>
+                  <option value="VV6">VV6</option>
+                  <option value="VV7">VV7</option>
+                  <option value="VV8">VV8</option>
+                  <option value="VV9">VV9</option>
+                  <option value="VV10">VV10</option>
+                  <option value="VV11">VV11</option>
+                  <option value="VV12">VV12</option>
+                  <option value="VV13">VV13</option>
+                  <option value="VV14">VV14</option>
+                  <option value="VV15">VV15</option>
+                  <option value="VV16">VV16</option>
+                  <option value="C1">C1</option>
+                  <option value="C2">C2</option>
+                  <option value="C3">C3</option>
+                  <option value="C4">C4</option>
+                  <option value="C5">C5</option>
+                  <option value="C6">C6</option>
+                  <option value="C7">C7</option>
+                  <option value="CABANA">CABANA</option>
+                  <option value="GA_NORMAL">GA NORMAL</option>
+                  <option value="GA_VOUCHER">GA VOUCHER</option>
+                </select>
+                <input
+                  type="text"
+                  value={tableNameForm.label}
+                  onChange={e => setTableNameForm({ ...tableNameForm, label: e.target.value })}
+                  className="admin-input"
+                  placeholder="Nhập tên hiển thị bàn, ví dụ: VVIP, Bình cũ, GA THƯỜNG"
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                <button type="submit" className="admin-submit-btn event">
+                  {editingTableName ? 'CẬP NHẬT TÊN' : 'LƯU TÊN BÀN'}
+                </button>
+                {editingTableName && (
+                  <button type="button" onClick={() => {
+                    setEditingTableName(null);
+                    setTableNameForm({ tableType: '', label: '' });
+                  }} className="admin-submit-btn" style={{ flex: 1, background: '#555' }}>
+                    HỦY SỬA
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Mã bàn</th>
+                  <th>Tên hiển thị</th>
+                  <th>Hành Động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tablePrices.length === 0 ? (
+                  <tr><td colSpan="3" className="admin-empty-msg">Chưa có dữ liệu bàn nào.</td></tr>
+                ) : (
+                  tablePrices.map((price) => (
+                    <tr key={price._id}>
+                      <td style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.tableType}</td>
+                      <td>{price.label || formatTableTypeLabel(price.tableType)}</td>
+                      <td>
+                        <button onClick={() => startEditTableName(price)} className="action-btn btn-edit" style={{width: '70px', height: '44px', marginRight: '5px', borderRadius: '7px', cursor: 'pointer'}}>
+                          Sửa tên
                         </button>
                       </td>
                     </tr>

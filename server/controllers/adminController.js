@@ -3,6 +3,7 @@ const Booking = require('../models/Booking');
 const Admin = require('../models/Admin');
 const MenuItem = require('../models/MenuItem');
 const TablePrice = require('../models/TablePrice');
+const MenuPreviewImage = require('../models/MenuPreviewImage');
 const sendAccountEmail = require('../utils/sendAccountEmail');
 const sendNotifyAdminNewAccount = require('../utils/notifyAdminNewAccount');
 const bcrypt = require('bcrypt');
@@ -123,11 +124,39 @@ const createEvent = async (req, res) => {
     if (!title || !date || !imageUrl) {
       return res.status(400).json({ success: false, message: 'Thiếu Tên, Ngày hoặc Link ảnh!' });
     }
-    const newEvent = new Event({ title, date, description, imageUrl });
+    const newEvent = new Event({ title, date, description, imageUrl, isHomeBanner: false });
     await newEvent.save();
     res.status(201).json({ success: true, message: 'Đăng thành công!', data: newEvent });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+};
+
+const toggleHomeBanner = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await Event.findById(id);
+
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện!' });
+    }
+
+    const nextValue = !event.isHomeBanner;
+
+    if (nextValue) {
+      await Event.updateMany({}, { $set: { isHomeBanner: false } });
+    }
+
+    event.isHomeBanner = nextValue;
+    await event.save();
+
+    return res.json({
+      success: true,
+      message: nextValue ? 'Đã đặt làm ảnh đầu trang.' : 'Đã bỏ ảnh đầu trang.',
+      event
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Lỗi cập nhật ảnh đầu trang' });
   }
 };
 const deleteEvent = async (req, res) => {
@@ -270,13 +299,49 @@ const getAllTablePrices = async (req, res) => {
     // Nếu không có data, tạo default prices
     if (prices.length === 0) {
       const defaultPrices = [
-        { tableType: 'VIP', weekday: 6000000, weekend: 8000000 },
-        { tableType: 'VVIP', weekday: 8000000, weekend: 10000000 },
-        { tableType: 'SVIP', weekday: 10000000, weekend: 12000000 },
-        { tableType: 'SV8', weekday: 20000000, weekend: 30000000 },
-        { tableType: 'CABANA', weekday: 0, weekend: 0 },
-        { tableType: 'GA_NORMAL', weekday: 3000000, weekend: 3000000 },
-        { tableType: 'GA_VOUCHER', weekday: 1500000, weekend: 2000000 }
+        { tableType: 'VIP', label: 'VIP', weekday: 6000000, weekend: 8000000 },
+        { tableType: 'VVIP', label: 'VVIP', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'SVIP', label: 'SVIP', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'SV8', label: 'SV8', weekday: 20000000, weekend: 30000000 },
+        { tableType: 'CABANA', label: 'CABANA', weekday: 0, weekend: 0 },
+        { tableType: 'GA_NORMAL', label: 'GA THƯỜNG', weekday: 3000000, weekend: 3000000 },
+        { tableType: 'GA_VOUCHER', label: 'GA VOUCHER', weekday: 1500000, weekend: 2000000 },
+        { tableType: 'SV1', label: 'SV1', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'SV2', label: 'SV2', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'SV3', label: 'SV3', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'SV4', label: 'SV4', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'SV5', label: 'SV5', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'SV6', label: 'SV6', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'SV7', label: 'SV7', weekday: 10000000, weekend: 12000000 },
+        { tableType: 'V1', label: 'V1', weekday: 6000000, weekend: 8000000 },
+        { tableType: 'V2', label: 'V2', weekday: 6000000, weekend: 8000000 },
+        { tableType: 'V3', label: 'V3', weekday: 6000000, weekend: 8000000 },
+        { tableType: 'V4', label: 'V4', weekday: 6000000, weekend: 8000000 },
+        { tableType: 'V5', label: 'V5', weekday: 6000000, weekend: 8000000 },
+        { tableType: 'V6', label: 'V6', weekday: 6000000, weekend: 8000000 },
+        { tableType: 'VV1', label: 'VV1', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV2', label: 'VV2', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV3', label: 'VV3', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV4', label: 'VV4', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV5', label: 'VV5', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV6', label: 'VV6', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV7', label: 'VV7', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV8', label: 'VV8', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV9', label: 'VV9', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV10', label: 'VV10', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV11', label: 'VV11', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV12', label: 'VV12', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV13', label: 'VV13', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV14', label: 'VV14', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV15', label: 'VV15', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'VV16', label: 'VV16', weekday: 8000000, weekend: 10000000 },
+        { tableType: 'C1', label: 'C1', weekday: 0, weekend: 0 },
+        { tableType: 'C2', label: 'C2', weekday: 0, weekend: 0 },
+        { tableType: 'C3', label: 'C3', weekday: 0, weekend: 0 },
+        { tableType: 'C4', label: 'C4', weekday: 0, weekend: 0 },
+        { tableType: 'C5', label: 'C5', weekday: 0, weekend: 0 },
+        { tableType: 'C6', label: 'C6', weekday: 0, weekend: 0 },
+        { tableType: 'C7', label: 'C7', weekday: 0, weekend: 0 }
       ];
       await TablePrice.insertMany(defaultPrices);
       return res.json({ success: true, data: defaultPrices });
@@ -290,7 +355,7 @@ const getAllTablePrices = async (req, res) => {
 
 const updateTablePrice = async (req, res) => {
   try {
-    const { tableType, weekday, weekend } = req.body;
+    const { tableType, label, weekday, weekend } = req.body;
     
     if (!tableType || weekday === undefined || weekend === undefined) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin giá!' });
@@ -299,8 +364,9 @@ const updateTablePrice = async (req, res) => {
     let price = await TablePrice.findOne({ tableType });
     
     if (!price) {
-      price = new TablePrice({ tableType, weekday, weekend });
+      price = new TablePrice({ tableType, label: label || tableType, weekday, weekend });
     } else {
+      price.label = label || price.label || tableType;
       price.weekday = weekday;
       price.weekend = weekend;
     }
@@ -312,4 +378,75 @@ const updateTablePrice = async (req, res) => {
   }
 };
 
-module.exports = { getAllEvents, createEvent, getAllBookings, getAllTransactions, login, createAdmin, changePassword, deleteEvent, deleteBooking, approveBookingDeposit, getMenu, createMenuItem, deleteMenuItem, updateMenuItem, deleteAllMenu, getAllTablePrices, updateTablePrice };
+// ===== QUẢN LÝ ẢNH MENU PREVIEW =====
+const getMenuPreviewImages = async (req, res) => {
+  try {
+    const images = await MenuPreviewImage.find().sort({ displayOrder: 1, createdAt: 1 });
+    res.json({ success: true, data: images });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi lấy ảnh menu preview' });
+  }
+};
+
+const createMenuPreviewImage = async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'Thiếu link ảnh!' });
+    }
+
+    // Lấy displayOrder cao nhất và cộng 1
+    const lastImage = await MenuPreviewImage.findOne().sort({ displayOrder: -1 });
+    const displayOrder = (lastImage?.displayOrder || 0) + 1;
+
+    const newImage = new MenuPreviewImage({ 
+      imageUrl, 
+      displayOrder,
+      isActive: true 
+    });
+    
+    await newImage.save();
+    res.status(201).json({ success: true, message: 'Đã thêm ảnh menu preview!', data: newImage });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi thêm ảnh menu preview' });
+  }
+};
+
+const updateMenuPreviewImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { imageUrl, displayOrder, isActive } = req.body;
+
+    const updatedImage = await MenuPreviewImage.findByIdAndUpdate(
+      id, 
+      { imageUrl, displayOrder, isActive },
+      { new: true }
+    );
+
+    if (!updatedImage) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy ảnh!' });
+    }
+
+    res.json({ success: true, message: 'Đã cập nhật ảnh menu preview!', data: updatedImage });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi cập nhật ảnh menu preview' });
+  }
+};
+
+const deleteMenuPreviewImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedImage = await MenuPreviewImage.findByIdAndDelete(id);
+
+    if (!deletedImage) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy ảnh để xóa!' });
+    }
+
+    res.json({ success: true, message: 'Đã xóa ảnh menu preview!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi xóa ảnh menu preview' });
+  }
+};
+
+module.exports = { getAllEvents, createEvent, toggleHomeBanner, getAllBookings, getAllTransactions, login, createAdmin, changePassword, deleteEvent, deleteBooking, approveBookingDeposit, getMenu, createMenuItem, deleteMenuItem, updateMenuItem, deleteAllMenu, getAllTablePrices, updateTablePrice, getMenuPreviewImages, createMenuPreviewImage, updateMenuPreviewImage, deleteMenuPreviewImage };

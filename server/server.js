@@ -4,7 +4,12 @@ const cors = require('cors');
 const http = require('http');
 const path = require('path');
 const dotenv = require('dotenv');
-dotenv.config({ path: path.join(__dirname, '.env') });
+
+const rootEnvPath = path.resolve(__dirname, '.env');
+const serverEnvPath = path.resolve(__dirname, '.env');
+
+dotenv.config({ path: rootEnvPath });
+dotenv.config({ path: serverEnvPath });
 
 const bookingRoutes = require('./routes/bookingRoutes'); 
 const eventRoutes = require('./routes/eventRoutes');

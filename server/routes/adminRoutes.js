@@ -5,6 +5,7 @@ const adminController = require('../controllers/adminController');
 const verifyToken = require('../auth/verifyToken');
 router.post('/login', adminController.login);// đăng nhập
 router.post('/events', verifyToken, adminController.createEvent); // tạo sự kiện mới
+router.put('/events/:id/home-banner', verifyToken, adminController.toggleHomeBanner); // đặt/bỏ sự kiện làm ảnh đầu trang
 router.get('/all', adminController.getAllBookings);// lấy tất cả bàn đã đặt
 router.get('/transactions', verifyToken, adminController.getAllTransactions); // lấy danh sách giao dịch cọc
 router.get('/alle', adminController.getAllEvents);// lấy tất cả sự kiện
@@ -20,4 +21,9 @@ router.delete('/menu/:id', verifyToken, adminController.deleteMenuItem); // xóa
 router.put('/menu/:id', verifyToken, adminController.updateMenuItem); // cập nhật menu
 router.get('/table-prices', adminController.getAllTablePrices); // lấy giá bàn
 router.put('/table-prices', verifyToken, adminController.updateTablePrice); // cập nhật giá bàn
+// QUẢN LÝ ẢNH MENU PREVIEW
+router.get('/menu-preview-images', adminController.getMenuPreviewImages); // lấy danh sách ảnh
+router.post('/menu-preview-images', verifyToken, adminController.createMenuPreviewImage); // thêm ảnh mới
+router.put('/menu-preview-images/:id', verifyToken, adminController.updateMenuPreviewImage); // cập nhật ảnh
+router.delete('/menu-preview-images/:id', verifyToken, adminController.deleteMenuPreviewImage); // xóa ảnh
 module.exports = router;

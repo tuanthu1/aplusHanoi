@@ -1,4 +1,5 @@
 const Booking = require('../models/Booking');
+const TablePrice = require('../models/TablePrice');
 const sendEmailToAdmin = require('../utils/sendEmail');
 
 const REQUIRED_DEPOSIT = 500000;
@@ -12,7 +13,58 @@ const getRequestIpAddress = (req) => {
   return req.ip || req.socket?.remoteAddress || '';
 };
 
-const prepareBookingPayload = (input = {}) => {
+const getPriceRecord = async (tableType) => {
+  if (!tableType) return null;
+  const exactRecord = await TablePrice.findOne({ tableType }).lean();
+  if (exactRecord) return exactRecord;
+
+  if (tableType.startsWith('SV')) return (await TablePrice.findOne({ tableType: 'SVIP' }).lean()) || (await TablePrice.findOne({ tableType: 'SV8' }).lean()) || null;
+  if (tableType.startsWith('VV')) return (await TablePrice.findOne({ tableType: 'VVIP' }).lean()) || null;
+  if (tableType.startsWith('V') && !tableType.startsWith('VV')) return (await TablePrice.findOne({ tableType: 'VIP' }).lean()) || null;
+  if (tableType.startsWith('C')) return (await TablePrice.findOne({ tableType: 'CABANA' }).lean()) || null;
+  return null;
+};
+
+const getTablePrice = async (tableId, bookingDate) => {
+  if (!tableId || !bookingDate || tableId === 'GA') return 0;
+
+  const dateObj = new Date(bookingDate);
+  const isSunday = dateObj.getDay() === 0;
+
+  const tableTypeCandidates = [tableId];
+  if (tableId.startsWith('SV')) tableTypeCandidates.push('SVIP');
+  if (tableId.startsWith('VV')) tableTypeCandidates.push('VVIP');
+  if (tableId.startsWith('V') && !tableId.startsWith('VV')) tableTypeCandidates.push('VIP');
+  if (tableId.startsWith('C')) tableTypeCandidates.push('CABANA');
+
+  for (const candidate of tableTypeCandidates) {
+    const record = await getPriceRecord(candidate);
+    if (record) {
+      const value = isSunday ? (record.weekend ?? record.weekday ?? 0) : (record.weekday ?? record.weekend ?? 0);
+      return Number(value) || 0;
+    }
+  }
+
+  const fallback = isSunday
+    ? (
+        tableId === 'SV8' ? 30000000 :
+        tableId.startsWith('VV') ? 10000000 :
+        tableId.startsWith('SV') ? 12000000 :
+        tableId.startsWith('C') ? 0 :
+        tableId.startsWith('V') ? 8000000 : 0
+      )
+    : (
+        tableId === 'SV8' ? 20000000 :
+        tableId.startsWith('VV') ? 8000000 :
+        tableId.startsWith('SV') ? 10000000 :
+        tableId.startsWith('C') ? 0 :
+        tableId.startsWith('V') ? 6000000 : 0
+      );
+
+  return fallback;
+};
+
+const prepareBookingPayload = async (input = {}) => {
   const {
     tableId,
     customerName,
@@ -33,7 +85,7 @@ const prepareBookingPayload = (input = {}) => {
     const price = Number(item?.price) || 0;
     return sum + qty * price;
   }, 0);
-  const tablePrice = getTablePrice(tableId, bookingDate);
+  const tablePrice = await getTablePrice(tableId, bookingDate);
 
   const finalEstimatedTotal = tableId !== 'GA'
     ? (menuTotal + tablePrice)
@@ -61,27 +113,6 @@ const prepareBookingPayload = (input = {}) => {
   };
 };
 
-const getTablePrice = (tableId, bookingDate) => {
-  if (!tableId || !bookingDate || tableId === 'GA') return 0;
-  const dateObj = new Date(bookingDate);
-  const isSunday = dateObj.getDay() === 0;
-
-  if (isSunday) {
-    if (tableId === 'SV8') return 30000000;
-    if (tableId.startsWith('VV')) return 10000000;
-    if (tableId.startsWith('SV')) return 12000000;
-    if (tableId.startsWith('C')) return 0;
-    if (tableId.startsWith('V')) return 8000000;
-  } else {
-    if (tableId === 'SV8') return 20000000;
-    if (tableId.startsWith('VV')) return 8000000;
-    if (tableId.startsWith('SV')) return 10000000;
-    if (tableId.startsWith('C')) return 0;
-    if (tableId.startsWith('V')) return 6000000;
-  }
-
-  return 0;
-};
 //LẤY TRẠNG THÁI BÀN
 const getOccupancy = async (req, res) => {
   try {
@@ -103,7 +134,7 @@ const getOccupancy = async (req, res) => {
 //TẠO ĐƠN ĐẶT BÀN MỚI
 const createBooking = async (req, res) => {
   try {
-    const bookingPreview = prepareBookingPayload(req.body);
+    const bookingPreview = await prepareBookingPayload(req.body);
 
     res.status(201).json({ 
       success: true, 
@@ -125,7 +156,7 @@ const submitDepositTransfer = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Thiếu dữ liệu đơn đặt bàn để xác nhận chuyển khoản.' });
     }
 
-    const payload = prepareBookingPayload(bookingData);
+    const payload = await prepareBookingPayload(bookingData);
     const newBooking = new Booking({
       ...payload,
       status: 'pending',
