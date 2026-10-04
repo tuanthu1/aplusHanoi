@@ -15,7 +15,6 @@ const Menu = () => {
   const [menuData, setMenuData] = useState({});
   const [activeTab, setActiveTab] = useState('gaBOTTLE');
   const [cart, setCart] = useState({});
-  const [tablePriceMap, setTablePriceMap] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
   const handleUpdateCart = (item, amount, option = null) => {
@@ -65,45 +64,12 @@ const Menu = () => {
         console.error("Lỗi kéo Menu từ DB:", error);
       }
     };
-    const loadTablePrices = async () => {
-      try {
-        const res = await axiosClient.get('/admin/table-prices');
-        if (res?.success && Array.isArray(res.data)) {
-          const map = {};
-          res.data.forEach(item => {
-            map[item.tableType] = item;
-          });
-          setTablePriceMap(map);
-        }
-      } catch (error) {
-        console.error('Lỗi kéo giá bàn từ DB:', error);
-      }
-    };
     loadMenuFromDatabase();
-    loadTablePrices();
   }, []);
   const getTablePrice = (tableId, dateString) => {
     if (!tableId || !dateString) return 0;
-
     const dateObj = new Date(dateString);
     const isSunday = dateObj.getDay() === 0;
-    const lookupTableType = tableId === 'GA'
-      ? (bookingInfo?.bookingType === 'voucher' ? 'GA_VOUCHER' : 'GA_NORMAL')
-      : tableId;
-
-    const candidates = [lookupTableType];
-    if (lookupTableType.startsWith('SV')) candidates.push('SVIP');
-    if (lookupTableType.startsWith('VV')) candidates.push('VVIP');
-    if (lookupTableType.startsWith('V') && !lookupTableType.startsWith('VV')) candidates.push('VIP');
-    if (lookupTableType.startsWith('C')) candidates.push('CABANA');
-
-    for (const type of candidates) {
-      const record = tablePriceMap[type];
-      if (record) {
-        const value = isSunday ? (record.weekend ?? record.weekday ?? 0) : (record.weekday ?? record.weekend ?? 0);
-        return Number(value) || 0;
-      }
-    }
 
     if (isSunday) {
       if (tableId === 'SV8') return 30000000;

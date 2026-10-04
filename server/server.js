@@ -11,6 +11,12 @@ const serverEnvPath = path.resolve(__dirname, '.env');
 dotenv.config({ path: rootEnvPath });
 dotenv.config({ path: serverEnvPath });
 
+const rootEnvPath = path.resolve(__dirname, '.env');
+const serverEnvPath = path.resolve(__dirname, '.env');
+
+dotenv.config({ path: rootEnvPath });
+dotenv.config({ path: serverEnvPath });
+
 const bookingRoutes = require('./routes/bookingRoutes'); 
 const eventRoutes = require('./routes/eventRoutes');
 const adminRoutes = require('./routes/adminRoutes');

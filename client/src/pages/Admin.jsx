@@ -40,8 +40,6 @@ const Admin = () => {
     const [tablePrices, setTablePrices] = useState([]);
     const [editingPrice, setEditingPrice] = useState(null);
     const [priceForm, setPriceForm] = useState({ tableType: '', weekday: 0, weekend: 0 });
-    const [tableNameForm, setTableNameForm] = useState({ tableType: '', label: '' });
-    const [editingTableName, setEditingTableName] = useState(null);
     const [customBannerUrl, setCustomBannerUrl] = useState(localStorage.getItem('homeBannerImage') || '');
     const [bannerUploadFile, setBannerUploadFile] = useState(null);
   const filteredEvents = events.filter(ev => {
@@ -95,7 +93,6 @@ const Admin = () => {
   const currentToken = localStorage.getItem('adminToken');
   const formatVnd = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value || 0))} ₫`;
   const parseVndInput = (value) => Number(String(value).replace(/[^\d]/g, '')) || 0;
-  const formatTableTypeLabel = (tableType = '') => String(tableType || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
 
   useEffect(() => {
     if (!currentToken) {
@@ -199,44 +196,6 @@ const Admin = () => {
         tableType: price.tableType,
         weekday: price.weekday,
         weekend: price.weekend
-      });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleSaveTableName = async (e) => {
-      e.preventDefault();
-      try {
-        const currentTable = tablePrices.find(item => item.tableType === tableNameForm.tableType);
-        const token = localStorage.getItem('adminToken');
-        const payload = {
-          tableType: tableNameForm.tableType,
-          label: tableNameForm.label,
-          weekday: currentTable?.weekday ?? 0,
-          weekend: currentTable?.weekend ?? 0
-        };
-
-        const data = await axiosClient.put('/admin/table-prices', payload, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        if (data.success) {
-          toast.success('Đã cập nhật tên bàn!');
-          setTableNameForm({ tableType: '', label: '' });
-          setEditingTableName(null);
-          fetchTablePrices();
-        }
-      } catch (error) {
-        toast.error(error.response?.data?.message || 'Lỗi cập nhật tên bàn');
-      }
-    };
-
-    const startEditTableName = (price) => {
-      setEditingTableName(price._id);
-      setTableNameForm({
-        tableType: price.tableType,
-        label: price.label || formatTableTypeLabel(price.tableType)
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -404,7 +363,7 @@ const Admin = () => {
   }, [currentToken, activeTab]);
 
   useEffect(() => {
-    if (currentToken && (activeTab === 'prices' || activeTab === 'table-names')) fetchTablePrices();
+    if (currentToken && activeTab === 'prices') fetchTablePrices();
   }, [currentToken, activeTab]);
 
   useEffect(() => {
@@ -783,13 +742,6 @@ const Admin = () => {
           onClick={() => setActiveTab('prices')}
         >
           QUẢN LÝ GIÁ BÀN
-        </button>
-
-        <button 
-          className={`admin-tab-btn ${activeTab === 'table-names' ? 'active' : ''}`}
-          onClick={() => setActiveTab('table-names')}
-        >
-          QUẢN LÝ TÊN BÀN
         </button>
       </div>
 
@@ -1570,42 +1522,6 @@ const Admin = () => {
                   <option value="VVIP">VVIP</option>
                   <option value="SVIP">SVIP</option>
                   <option value="SV8">SV8</option>
-                  <option value="SV1">SV1</option>
-                  <option value="SV2">SV2</option>
-                  <option value="SV3">SV3</option>
-                  <option value="SV4">SV4</option>
-                  <option value="SV5">SV5</option>
-                  <option value="SV6">SV6</option>
-                  <option value="SV7">SV7</option>
-                  <option value="V1">V1</option>
-                  <option value="V2">V2</option>
-                  <option value="V3">V3</option>
-                  <option value="V4">V4</option>
-                  <option value="V5">V5</option>
-                  <option value="V6">V6</option>
-                  <option value="VV1">VV1</option>
-                  <option value="VV2">VV2</option>
-                  <option value="VV3">VV3</option>
-                  <option value="VV4">VV4</option>
-                  <option value="VV5">VV5</option>
-                  <option value="VV6">VV6</option>
-                  <option value="VV7">VV7</option>
-                  <option value="VV8">VV8</option>
-                  <option value="VV9">VV9</option>
-                  <option value="VV10">VV10</option>
-                  <option value="VV11">VV11</option>
-                  <option value="VV12">VV12</option>
-                  <option value="VV13">VV13</option>
-                  <option value="VV14">VV14</option>
-                  <option value="VV15">VV15</option>
-                  <option value="VV16">VV16</option>
-                  <option value="C1">C1</option>
-                  <option value="C2">C2</option>
-                  <option value="C3">C3</option>
-                  <option value="C4">C4</option>
-                  <option value="C5">C5</option>
-                  <option value="C6">C6</option>
-                  <option value="C7">C7</option>
                   <option value="CABANA">CABANA</option>
                   <option value="GA_NORMAL">GA NORMAL</option>
                   <option value="GA_VOUCHER">GA VOUCHER</option>
@@ -1667,131 +1583,12 @@ const Admin = () => {
                 ) : (
                   tablePrices.map((price) => (
                     <tr key={price._id}>
-                      <td>
-                        <div style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.label || formatTableTypeLabel(price.tableType)}</div>
-                        <div style={{fontSize: '11px', color: '#aaa'}}>{price.tableType}</div>
-                      </td>
+                      <td style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.tableType}</td>
                       <td>{price.weekday.toLocaleString('vi-VN')} đ</td>
                       <td>{price.weekend.toLocaleString('vi-VN')} đ</td>
                       <td>
                         <button onClick={() => startEditPrice(price)} className="action-btn btn-edit" style={{width: '50px', height: '44px', marginRight: '5px', borderRadius: '7px', cursor: 'pointer'}}>
                           Sửa
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'table-names' && (
-        <div className="tab-content fade-in">
-          <div className="admin-form-container" style={{ maxWidth: '560px', marginBottom: '30px' }}>
-            <h2 className="admin-form-title event">
-              {editingTableName ? 'CHỈNH SỬA TÊN BÀN' : 'CẬP NHẬT TÊN BÀN'}
-            </h2>
-            <form onSubmit={handleSaveTableName} className="admin-form">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <select
-                  value={tableNameForm.tableType}
-                  onChange={e => setTableNameForm({ ...tableNameForm, tableType: e.target.value })}
-                  className="admin-input"
-                  required
-                >
-                  <option value="">-- Chọn loại bàn --</option>
-                  <option value="VIP">VIP</option>
-                  <option value="VVIP">VVIP</option>
-                  <option value="SVIP">SVIP</option>
-                  <option value="SV8">SV8</option>
-                  <option value="SV1">SV1</option>
-                  <option value="SV2">SV2</option>
-                  <option value="SV3">SV3</option>
-                  <option value="SV4">SV4</option>
-                  <option value="SV5">SV5</option>
-                  <option value="SV6">SV6</option>
-                  <option value="SV7">SV7</option>
-                  <option value="V1">V1</option>
-                  <option value="V2">V2</option>
-                  <option value="V3">V3</option>
-                  <option value="V4">V4</option>
-                  <option value="V5">V5</option>
-                  <option value="V6">V6</option>
-                  <option value="VV1">VV1</option>
-                  <option value="VV2">VV2</option>
-                  <option value="VV3">VV3</option>
-                  <option value="VV4">VV4</option>
-                  <option value="VV5">VV5</option>
-                  <option value="VV6">VV6</option>
-                  <option value="VV7">VV7</option>
-                  <option value="VV8">VV8</option>
-                  <option value="VV9">VV9</option>
-                  <option value="VV10">VV10</option>
-                  <option value="VV11">VV11</option>
-                  <option value="VV12">VV12</option>
-                  <option value="VV13">VV13</option>
-                  <option value="VV14">VV14</option>
-                  <option value="VV15">VV15</option>
-                  <option value="VV16">VV16</option>
-                  <option value="C1">C1</option>
-                  <option value="C2">C2</option>
-                  <option value="C3">C3</option>
-                  <option value="C4">C4</option>
-                  <option value="C5">C5</option>
-                  <option value="C6">C6</option>
-                  <option value="C7">C7</option>
-                  <option value="CABANA">CABANA</option>
-                  <option value="GA_NORMAL">GA NORMAL</option>
-                  <option value="GA_VOUCHER">GA VOUCHER</option>
-                </select>
-                <input
-                  type="text"
-                  value={tableNameForm.label}
-                  onChange={e => setTableNameForm({ ...tableNameForm, label: e.target.value })}
-                  className="admin-input"
-                  placeholder="Nhập tên hiển thị bàn, ví dụ: VVIP, Bình cũ, GA THƯỜNG"
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-                <button type="submit" className="admin-submit-btn event">
-                  {editingTableName ? 'CẬP NHẬT TÊN' : 'LƯU TÊN BÀN'}
-                </button>
-                {editingTableName && (
-                  <button type="button" onClick={() => {
-                    setEditingTableName(null);
-                    setTableNameForm({ tableType: '', label: '' });
-                  }} className="admin-submit-btn" style={{ flex: 1, background: '#555' }}>
-                    HỦY SỬA
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-
-          <div className="admin-table-wrapper">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Mã bàn</th>
-                  <th>Tên hiển thị</th>
-                  <th>Hành Động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tablePrices.length === 0 ? (
-                  <tr><td colSpan="3" className="admin-empty-msg">Chưa có dữ liệu bàn nào.</td></tr>
-                ) : (
-                  tablePrices.map((price) => (
-                    <tr key={price._id}>
-                      <td style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.tableType}</td>
-                      <td>{price.label || formatTableTypeLabel(price.tableType)}</td>
-                      <td>
-                        <button onClick={() => startEditTableName(price)} className="action-btn btn-edit" style={{width: '70px', height: '44px', marginRight: '5px', borderRadius: '7px', cursor: 'pointer'}}>
-                          Sửa tên
                         </button>
                       </td>
                     </tr>

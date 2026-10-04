@@ -22,7 +22,7 @@ const tablePaths = [
   { id: 'vv', d: ' M174.5 346H183.5V366.5C183 370.5 180.755 373 176.5 373H144.5C140.5 372.5 139.5 372 138.5 368.5V346H146.5V358.5C147 362 149 363 151.5 364.5H169.5C172 363.5 174 361.5 174.5 358.5V346Z', isArea: true, labelX: 160, labelY: 360, subTables: [{ id: 'VV11', x: 128.5, y: 370.6 }] },
   { id: 'vv', d: 'M326 256H312.5V292.5L277 327H235.5V340L282.5 340.5L284 339.5L326 298V256Z', isArea: true, labelX: 290, labelY: 300, subTables: [{ id: 'VV7', x: 260, y: 290 }, { id: 'VV8', x: 240, y: 310 }, { id: 'VV9', x: 220, y: 330 }] },
   { id: 'v', d: ' M125.5 346H134.5V366.5C134 370.5 131.755 373 127.5 373H95.5C91.5 372.5 90.5 372 89.5 368.5V346H97.5V358.5C98 362 100 363 102.5 364.5H120.5C123 363.5 125 361.5 125.5 358.5V346Z', isArea: true, labelX: 70, labelY: 370, subTables: [{ id: 'V4', x: 79.5, y: 370.6 }] },
-  { id: 'president', d: 'M61.1276 16.7581V0.5H69.5V24.2849C68.9226 25.7903 67.1904 27.5968 66.0356 28.5H5.98535C3.96447 27.5968 1.94355 26.3925 0.5 24.2849V0.5H8.58368V16.7581C9.73849 19.1667 11.182 20.0699 12.0481 20.672H58.5293C59.6841 19.4677 60.2615 18.5645 61.1276 16.7581Z', isArea: true, labelX: 300, labelY: 370, offsetX: 150 ,offsetY: 312, subTables: [{ id: 'SV8', x: 153, y: 340}] },
+  { id: 'president', d: 'M61.1276 16.7581V0.5H69.5V24.2849C68.9226 25.7903 67.1904 27.5968 66.0356 28.5H5.98535C3.96447 27.5968 1.94355 26.3925 0.5 24.2849V0.5H8.58368V16.7581C9.73849 19.1667 11.182 20.0699 12.0481 20.672H58.5293C59.6841 19.4677 60.2615 18.5645 61.1276 16.7581Z', isArea: true, labelX: 300, labelY: 370, offsetX: 150 ,offsetY: 312, subTables: [{ id: 'PRESIDENT', x: 153, y: 340}] },
   { id: 'v', d: 'M272.5 346.5H281.5V367C281 371 278.755 373.5 274.5 373.5H242.5C238.5 373 237.5 372.5 236.5 369V346.5H244.5V359C245 362.5 247 363.5 249.5 365H267.5C270 364 272 362 272.5 359V346.5Z', isArea: true, labelX: 260, labelY: 360, subTables: [{ id: 'V3', x: 226.5, y: 371 }] },
   { id: 'vv', d: 'M223.5 346H232.5V366.5C232 370.5 229.755 373 225.5 373H193.5C189.5 372.5 188.5 372 187.5 368.5V346H195.5V358.5C196 362 198 363 200.5 364.5H218.5C221 363.5 223 361.5 223.5 358.5V346Z', isArea: true, labelX: 210, labelY: 360, subTables: [{ id: 'VV10', x: 177.7, y: 371 }] },
   { id: 'c', d: 'M9.13014 13.8494V0.553955L0.5 1.44032V21.2358C0.5 26.554 5.43151 26.554 5.43151 26.554H39.9521C39.9521 26.554 45.5 26.554 45.5 21.2358V1.44032L36.2534 0.553955V13.8494C36.2534 15.0312 33.1712 17.9858 30.7055 17.9858H13.7534C13.7534 17.9858 9.13014 16.5085 9.13014 13.8494Z', isArea: true, labelX: 210, labelY: 410, offsetX: 211 ,offsetY: 400, subTables: [{ id: 'C3', x: 202, y: 424.7 }] },
@@ -233,7 +233,7 @@ const FloorMap = () => {
                           rx="0.5" 
                           className={`table-label-box box-${sub.id}`} 
                         />
-                          <text x={sub.x + 32} y={sub.y - 18} className={`table-label-text label-${sub.id}`} style={sub.customStyle || area.customStyle || {}} textAnchor="middle" dominantBaseline="middle">{tablePrices[sub.id]?.label || sub.id}</text>
+                          <text x={sub.x + 32} y={sub.y - 18} className={`table-label-text label-${sub.id}`} style={sub.customStyle || area.customStyle || {}} textAnchor="middle" dominantBaseline="middle">{sub.id}</text>
                         </>
                       )}
                     </g>
@@ -247,7 +247,7 @@ const FloorMap = () => {
                       {area.id && (
                         <>
                           <rect x={area.labelX} y={area.labelY} width="35" height="15" rx="4" className={`table-label-box box-${area.id}`} />
-                          <text x={area.labelX + 17.5} y={area.labelY + 7.5} className={`table-label-text label-${area.id}`} style={area.customStyle || {}} textAnchor="middle" dominantBaseline="middle">{tablePrices[area.id]?.label || area.id}</text>
+                          <text x={area.labelX + 17.5} y={area.labelY + 7.5} className={`table-label-text label-${area.id}`} style={area.customStyle || {}} textAnchor="middle" dominantBaseline="middle">{area.id}</text>
                         </>
                       )}
                     </g>
@@ -389,7 +389,7 @@ const FloorMap = () => {
             <tr><td><div className="legend-box vip">VIP</div></td><td className="price">{(tablePrices.VIP?.weekday || 6000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.VIP?.weekend || 8000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box vvip">VVIP</div></td><td className="price">{(tablePrices.VVIP?.weekday || 8000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.VVIP?.weekend || 10000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box svip">SVIP</div></td><td className="price">{(tablePrices.SVIP?.weekday || 10000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.SVIP?.weekend || 12000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
-            <tr><td><div className="legend-box president">SV8</div></td><td className="price">{(tablePrices.SV8?.weekday || 20000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.SV8?.weekend || 30000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
+            <tr><td><div className="legend-box president">PRESIDENT</div></td><td className="price">{(tablePrices.PRESIDENT?.weekday || 20000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.PRESIDENT?.weekend || 30000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box cabana">CABANA</div></td><td className="price cabana-price">ĐẤU GIÁ<span>VND</span></td><td className="price cabana-price">ĐẤU GIÁ<span>VND</span></td></tr>
             <tr><td><div className="legend-box gathuong">{t('table_ga_normal')}</div></td><td className="price cabana-price">{(tablePrices.GA_NORMAL?.weekday || 3000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price cabana-price">{(tablePrices.GA_NORMAL?.weekend || 3000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box gavoucher">{t('table_ga_voucher')}</div></td><td className="price cabana-price">{(tablePrices.GA_VOUCHER?.weekday || 1500000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price cabana-price">{(tablePrices.GA_VOUCHER?.weekend || 2000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
