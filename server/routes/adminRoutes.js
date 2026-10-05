@@ -21,6 +21,7 @@ router.delete('/menu/:id', verifyToken, adminController.deleteMenuItem); // xóa
 router.put('/menu/:id', verifyToken, adminController.updateMenuItem); // cập nhật menu
 router.get('/table-prices', adminController.getAllTablePrices); // lấy giá bàn
 router.put('/table-prices', verifyToken, adminController.updateTablePrice); // cập nhật giá bàn
+router.delete('/table-prices/:tableType', verifyToken, adminController.deleteTablePrice);
 // QUẢN LÝ ẢNH MENU PREVIEW
 router.get('/menu-preview-images', adminController.getMenuPreviewImages); // lấy danh sách ảnh
 router.post('/menu-preview-images', verifyToken, adminController.createMenuPreviewImage); // thêm ảnh mới

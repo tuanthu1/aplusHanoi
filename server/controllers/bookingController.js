@@ -13,15 +13,37 @@ const getRequestIpAddress = (req) => {
   return req.ip || req.socket?.remoteAddress || '';
 };
 
+const normalizeTableType = (value) => {
+  if (typeof value !== 'string') return '';
+
+  const cleaned = value.trim().toUpperCase();
+  if (!cleaned) return '';
+
+  const normalized = cleaned
+    .replace(/\s+/g, '_')
+    .replace(/-/g, '_')
+    .replace(/[^A-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  const aliasMap = {
+    GAVOUCHER: 'GA_VOUCHER',
+    GANORMAL: 'GA_NORMAL'
+  };
+
+  return aliasMap[normalized] || normalized;
+};
+
 const getPriceRecord = async (tableType) => {
   if (!tableType) return null;
-  const exactRecord = await TablePrice.findOne({ tableType }).lean();
+  const normalizedTableType = normalizeTableType(tableType);
+  const exactRecord = await TablePrice.findOne({ tableType: normalizedTableType }).lean();
   if (exactRecord) return exactRecord;
 
-  if (tableType.startsWith('SV')) return (await TablePrice.findOne({ tableType: 'SVIP' }).lean()) || (await TablePrice.findOne({ tableType: 'SV8' }).lean()) || null;
-  if (tableType.startsWith('VV')) return (await TablePrice.findOne({ tableType: 'VVIP' }).lean()) || null;
-  if (tableType.startsWith('V') && !tableType.startsWith('VV')) return (await TablePrice.findOne({ tableType: 'VIP' }).lean()) || null;
-  if (tableType.startsWith('C')) return (await TablePrice.findOne({ tableType: 'CABANA' }).lean()) || null;
+  if (normalizedTableType.startsWith('SV')) return (await TablePrice.findOne({ tableType: 'SVIP' }).lean()) || (await TablePrice.findOne({ tableType: 'SV8' }).lean()) || null;
+  if (normalizedTableType.startsWith('VV')) return (await TablePrice.findOne({ tableType: 'VVIP' }).lean()) || null;
+  if (normalizedTableType.startsWith('V') && !normalizedTableType.startsWith('VV')) return (await TablePrice.findOne({ tableType: 'VIP' }).lean()) || null;
+  if (normalizedTableType.startsWith('C')) return (await TablePrice.findOne({ tableType: 'CABANA' }).lean()) || null;
   return null;
 };
 
@@ -47,14 +69,14 @@ const getTablePrice = async (tableId, bookingDate) => {
 
   const fallback = isSunday
     ? (
-        tableId === 'SV8' ? 30000000 :
+        ['SV8', 'PRESIDENT'].includes(tableId) ? 30000000 :
         tableId.startsWith('VV') ? 10000000 :
         tableId.startsWith('SV') ? 12000000 :
         tableId.startsWith('C') ? 0 :
         tableId.startsWith('V') ? 8000000 : 0
       )
     : (
-        tableId === 'SV8' ? 20000000 :
+        ['SV8', 'PRESIDENT'].includes(tableId) ? 20000000 :
         tableId.startsWith('VV') ? 8000000 :
         tableId.startsWith('SV') ? 10000000 :
         tableId.startsWith('C') ? 0 :
@@ -200,6 +222,9 @@ const getBookingPaymentStatus = async (req, res) => {
   }
 };
 
+module.exports = { getOccupancy, createBooking, submitDepositTransfer, getBookingPaymentStatus };
+
+if (false) {
 const Booking = require('../models/Booking');
 const sendEmailToAdmin = require('../utils/sendEmail');
 
@@ -372,3 +397,4 @@ const getBookingPaymentStatus = async (req, res) => {
 };
 
 module.exports = { getOccupancy, createBooking, submitDepositTransfer, getBookingPaymentStatus };
+}

@@ -72,13 +72,13 @@ const Menu = () => {
     const isSunday = dateObj.getDay() === 0;
 
     if (isSunday) {
-      if (tableId === 'SV8') return 30000000;
+      if (['SV8', 'PRESIDENT'].includes(tableId)) return 30000000;
       if (tableId.startsWith('VV')) return 10000000;
       if (tableId.startsWith('SV')) return 12000000;
       if (tableId.startsWith('C')) return 0;
       if (tableId.startsWith('V')) return 8000000;
     } else {
-      if (tableId === 'SV8') return 20000000;
+      if (['SV8', 'PRESIDENT'].includes(tableId)) return 20000000;
       if (tableId.startsWith('VV')) return 8000000;
       if (tableId.startsWith('SV')) return 10000000;
       if (tableId.startsWith('C')) return 0;

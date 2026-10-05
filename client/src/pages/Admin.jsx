@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { toast } from 'react-toastify';
 import { menuaData } from '../data/menuData';
+
+const tableTypeOptions = [
+  'VIP', 'VVIP', 'SVIP', 'SV8', 'PRESIDENT', 'SV1', 'SV2', 'SV3', 'SV4', 'SV5', 'SV6', 'SV7',
+  'V1', 'V2', 'V3', 'V4', 'V5', 'V6',
+  'VV1', 'VV2', 'VV3', 'VV4', 'VV5', 'VV6', 'VV7', 'VV8', 'VV9', 'VV10', 'VV11', 'VV12', 'VV13', 'VV14', 'VV15', 'VV16',
+  'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'CABANA', 'GA_NORMAL', 'GA_VOUCHER'
+];
+
 const Admin = () => {
   const [bookings, setBookings] = useState([]);
   const [filterDate, setFilterDate] = useState('');
@@ -40,6 +48,8 @@ const Admin = () => {
     const [tablePrices, setTablePrices] = useState([]);
     const [editingPrice, setEditingPrice] = useState(null);
     const [priceForm, setPriceForm] = useState({ tableType: '', weekday: 0, weekend: 0 });
+    const [tableNameForm, setTableNameForm] = useState({ tableType: '', label: '' });
+    const [editingTableName, setEditingTableName] = useState(null);
     const [customBannerUrl, setCustomBannerUrl] = useState(localStorage.getItem('homeBannerImage') || '');
     const [bannerUploadFile, setBannerUploadFile] = useState(null);
   const filteredEvents = events.filter(ev => {
@@ -93,6 +103,7 @@ const Admin = () => {
   const currentToken = localStorage.getItem('adminToken');
   const formatVnd = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value || 0))} ₫`;
   const parseVndInput = (value) => Number(String(value).replace(/[^\d]/g, '')) || 0;
+  const formatTableTypeLabel = (tableType = '') => String(tableType || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
 
   useEffect(() => {
     if (!currentToken) {
@@ -196,6 +207,67 @@ const Admin = () => {
         tableType: price.tableType,
         weekday: price.weekday,
         weekend: price.weekend
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteTablePrice = async (price) => {
+      const tableLabel = price.label || formatTableTypeLabel(price.tableType);
+      if (!window.confirm(`Xóa cấu hình giá và tên của ${tableLabel}? Vị trí trên sơ đồ và lịch sử đặt bàn không bị xóa.`)) return;
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        const data = await axiosClient.delete(`/admin/table-prices/${encodeURIComponent(price.tableType)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (data.success) {
+          toast.success(`Đã xóa cấu hình ${tableLabel}.`);
+          if (priceForm.tableType === price.tableType) {
+            setEditingPrice(null);
+            setPriceForm({ tableType: '', weekday: 0, weekend: 0 });
+          }
+          if (tableNameForm.tableType === price.tableType) {
+            setEditingTableName(null);
+            setTableNameForm({ tableType: '', label: '' });
+          }
+          fetchTablePrices();
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.message || `Lỗi xóa cấu hình ${tableLabel}`);
+      }
+    };
+
+    const handleSaveTableName = async (e) => {
+      e.preventDefault();
+      try {
+        const currentTable = tablePrices.find(item => item.tableType === tableNameForm.tableType);
+        const token = localStorage.getItem('adminToken');
+        const data = await axiosClient.put('/admin/table-prices', {
+          tableType: tableNameForm.tableType,
+          label: tableNameForm.label,
+          weekday: currentTable?.weekday ?? 0,
+          weekend: currentTable?.weekend ?? 0
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (data.success) {
+          toast.success('Đã cập nhật tên bàn!');
+          setTableNameForm({ tableType: '', label: '' });
+          setEditingTableName(null);
+          fetchTablePrices();
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Lỗi cập nhật tên bàn');
+      }
+    };
+
+    const startEditTableName = (price) => {
+      setEditingTableName(price._id);
+      setTableNameForm({
+        tableType: price.tableType,
+        label: price.label || formatTableTypeLabel(price.tableType)
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -363,7 +435,7 @@ const Admin = () => {
   }, [currentToken, activeTab]);
 
   useEffect(() => {
-    if (currentToken && activeTab === 'prices') fetchTablePrices();
+    if (currentToken && ['prices', 'table-names'].includes(activeTab)) fetchTablePrices();
   }, [currentToken, activeTab]);
 
   useEffect(() => {
@@ -742,6 +814,12 @@ const Admin = () => {
           onClick={() => setActiveTab('prices')}
         >
           QUẢN LÝ GIÁ BÀN
+        </button>
+        <button
+          className={`admin-tab-btn ${activeTab === 'table-names' ? 'active' : ''}`}
+          onClick={() => setActiveTab('table-names')}
+        >
+          QUẢN LÝ TÊN BÀN
         </button>
       </div>
 
@@ -1518,13 +1596,9 @@ const Admin = () => {
                   required
                 >
                   <option value="">-- Chọn loại bàn --</option>
-                  <option value="VIP">VIP</option>
-                  <option value="VVIP">VVIP</option>
-                  <option value="SVIP">SVIP</option>
-                  <option value="SV8">SV8</option>
-                  <option value="CABANA">CABANA</option>
-                  <option value="GA_NORMAL">GA NORMAL</option>
-                  <option value="GA_VOUCHER">GA VOUCHER</option>
+                  {tableTypeOptions.map(tableType => (
+                    <option key={tableType} value={tableType}>{formatTableTypeLabel(tableType)}</option>
+                  ))}
                 </select>
                 <div style={{ flex: 1, minWidth: '150px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ color: '#d4e02e', fontSize: '13px', fontWeight: 'bold' }}>Ngày thường</label>
@@ -1583,17 +1657,96 @@ const Admin = () => {
                 ) : (
                   tablePrices.map((price) => (
                     <tr key={price._id}>
-                      <td style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.tableType}</td>
+                      <td>
+                        <div style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.label || formatTableTypeLabel(price.tableType)}</div>
+                        <div style={{fontSize: '11px', color: '#aaa'}}>{price.tableType}</div>
+                      </td>
                       <td>{price.weekday.toLocaleString('vi-VN')} đ</td>
                       <td>{price.weekend.toLocaleString('vi-VN')} đ</td>
                       <td>
                         <button onClick={() => startEditPrice(price)} className="action-btn btn-edit" style={{width: '50px', height: '44px', marginRight: '5px', borderRadius: '7px', cursor: 'pointer'}}>
                           Sửa
                         </button>
+                        <button onClick={() => handleDeleteTablePrice(price)} className="action-btn btn-cancel" style={{height: '44px', borderRadius: '7px', cursor: 'pointer'}}>
+                          Xóa
+                        </button>
                       </td>
                     </tr>
                   ))
                 )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'table-names' && (
+        <div className="tab-content fade-in">
+          <div className="admin-form-container" style={{ maxWidth: '560px', marginBottom: '30px' }}>
+            <h2 className="admin-form-title event">
+              {editingTableName ? 'CHỈNH SỬA TÊN BÀN' : 'CẬP NHẬT TÊN BÀN'}
+            </h2>
+            <form onSubmit={handleSaveTableName} className="admin-form">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <select
+                  value={tableNameForm.tableType}
+                  onChange={e => setTableNameForm({ ...tableNameForm, tableType: e.target.value })}
+                  className="admin-input"
+                  disabled={Boolean(editingTableName)}
+                  required
+                >
+                  <option value="">-- Chọn loại bàn --</option>
+                  {tableTypeOptions.map(tableType => (
+                    <option key={tableType} value={tableType}>{formatTableTypeLabel(tableType)}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={tableNameForm.label}
+                  onChange={e => setTableNameForm({ ...tableNameForm, label: e.target.value })}
+                  className="admin-input"
+                  placeholder="Tên hiển thị, ví dụ: GA NORMAL"
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                <button type="submit" className="admin-submit-btn event">
+                  {editingTableName ? 'CẬP NHẬT TÊN' : 'LƯU TÊN BÀN'}
+                </button>
+                {editingTableName && (
+                  <button type="button" onClick={() => {
+                    setEditingTableName(null);
+                    setTableNameForm({ tableType: '', label: '' });
+                  }} className="admin-submit-btn" style={{ flex: 1, background: '#555' }}>
+                    HỦY SỬA
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
+                <tr><th>Mã bàn</th><th>Tên hiển thị</th><th>Hành Động</th></tr>
+              </thead>
+              <tbody>
+                {tablePrices.length === 0 ? (
+                  <tr><td colSpan="3" className="admin-empty-msg">Chưa có dữ liệu bàn nào.</td></tr>
+                ) : tablePrices.map(price => (
+                  <tr key={price._id}>
+                    <td style={{fontWeight: 'bold', color: '#d4e02e'}}>{price.tableType}</td>
+                    <td>{price.label || formatTableTypeLabel(price.tableType)}</td>
+                    <td>
+                      <button onClick={() => startEditTableName(price)} className="action-btn btn-edit" style={{width: '70px', height: '44px', marginRight: '5px', borderRadius: '7px', cursor: 'pointer'}}>
+                        Sửa tên
+                      </button>
+                      <button onClick={() => handleDeleteTablePrice(price)} className="action-btn btn-cancel" style={{height: '44px', borderRadius: '7px', cursor: 'pointer'}}>
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

@@ -67,7 +67,7 @@ const FloorMap = () => {
         if (response.success && response.data) {
           const pricesMap = {};
           response.data.forEach(price => {
-            pricesMap[price.tableType] = { weekday: price.weekday, weekend: price.weekend };
+            pricesMap[price.tableType] = { weekday: price.weekday, weekend: price.weekend, label: price.label };
           });
           setTablePrices(pricesMap);
         }
@@ -226,14 +226,14 @@ const FloorMap = () => {
                       {sub.id && (
                         <>
                           <rect 
-                          x={sub.id === 'PRESIDENT' ? sub.x + 8 : sub.x + 21} 
+                          x={['PRESIDENT'].includes(sub.id) ? sub.x + 8 : sub.x + 21} 
                           y={sub.y - 24} 
-                          width={sub.id === 'PRESIDENT' ? "48" : "22"} 
+                          width={'PRESIDENT'.includes(sub.id) ? "48" : "22"} 
                           height="11" 
                           rx="0.5" 
                           className={`table-label-box box-${sub.id}`} 
                         />
-                          <text x={sub.x + 32} y={sub.y - 18} className={`table-label-text label-${sub.id}`} style={sub.customStyle || area.customStyle || {}} textAnchor="middle" dominantBaseline="middle">{sub.id}</text>
+                          <text x={sub.x + 32} y={sub.y - 18} className={`table-label-text label-${sub.id}`} style={sub.customStyle || area.customStyle || {}} textAnchor="middle" dominantBaseline="middle">{tablePrices[sub.id]?.label || sub.id}</text>
                         </>
                       )}
                     </g>
@@ -389,7 +389,7 @@ const FloorMap = () => {
             <tr><td><div className="legend-box vip">VIP</div></td><td className="price">{(tablePrices.VIP?.weekday || 6000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.VIP?.weekend || 8000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box vvip">VVIP</div></td><td className="price">{(tablePrices.VVIP?.weekday || 8000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.VVIP?.weekend || 10000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box svip">SVIP</div></td><td className="price">{(tablePrices.SVIP?.weekday || 10000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.SVIP?.weekend || 12000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
-            <tr><td><div className="legend-box president">PRESIDENT</div></td><td className="price">{(tablePrices.PRESIDENT?.weekday || 20000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.PRESIDENT?.weekend || 30000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
+            <tr><td><div className="legend-box president">{tablePrices.PRESIDENT?.label || 'PRESIDENT'}</div></td><td className="price">{(tablePrices.PRESIDENT?.weekday || 20000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price">{(tablePrices.PRESIDENT?.weekend || 30000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box cabana">CABANA</div></td><td className="price cabana-price">ĐẤU GIÁ<span>VND</span></td><td className="price cabana-price">ĐẤU GIÁ<span>VND</span></td></tr>
             <tr><td><div className="legend-box gathuong">{t('table_ga_normal')}</div></td><td className="price cabana-price">{(tablePrices.GA_NORMAL?.weekday || 3000000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price cabana-price">{(tablePrices.GA_NORMAL?.weekend || 3000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>
             <tr><td><div className="legend-box gavoucher">{t('table_ga_voucher')}</div></td><td className="price cabana-price">{(tablePrices.GA_VOUCHER?.weekday || 1500000).toLocaleString('vi-VN')} <span>VND</span></td><td className="price cabana-price">{(tablePrices.GA_VOUCHER?.weekend || 2000000).toLocaleString('vi-VN')} <span>VND</span></td></tr>

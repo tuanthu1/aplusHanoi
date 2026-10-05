@@ -1,6 +1,6 @@
 import axios from 'axios';
 const axiosClient = axios.create({
-  baseURL: "https://aplushn-api.onrender.com/api", // Thay đổi URL cơ sở của API nếu cần
+  baseURL: "http://localhost:5002/api", // Thay đổi URL cơ sở của API nếu cần
   //  https://aplushn-api.onrender.com/api
   headers: {
     'Content-Type': 'application/json',
